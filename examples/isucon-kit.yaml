@@ -1,0 +1,27 @@
+# Local paths are relative to this file. Hosts are SSH aliases from ~/.ssh/config.
+build: [sh, -c, "cd webapp/go && GOOS=linux GOARCH=amd64 go build -o isucondition"]
+
+hosts:
+  - ssh: isu1
+    files:
+      webapp/go/isucondition: /home/isucon/webapp/go/isucondition
+      conf/nginx/nginx.conf: /etc/nginx/nginx.conf
+    restart: [isucondition.go.service, nginx.service]
+  - ssh: isu2
+    files:
+      webapp/go/isucondition: /home/isucon/webapp/go/isucondition
+    restart: [isucondition.go.service]
+  - ssh: isu3
+    files:
+      conf/mysql/mysqld.cnf: /etc/mysql/mysql.conf.d/mysqld.cnf
+    restart: [mysql.service]
+
+# Commands run on your machine; the remote log is piped to stdin.
+# Logs listed here are emptied on every deploy.
+analyze:
+  alp:
+    log: /var/log/nginx/access.log
+    cmd: [alp, json, --sort, sum, -r, -m, "/api/isu/[^/]+/.+,/api/isu/[^/]+"]
+  slow:
+    log: /var/log/mysql/mysql-slow.log
+    cmd: [pt-query-digest, --limit, "10"]
